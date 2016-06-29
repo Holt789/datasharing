@@ -1,0 +1,201 @@
+Week 2 coursework - Reproducible research
+=============================================================
+
+## read data from file
+```{r}
+data <- read.csv("activity.csv")
+```
+
+### Display the summary of the data
+```{r}
+summary(data)
+```
+
+### The mean steps across all days is
+```{r}
+mean(data$steps, na.rm=TRUE)
+```
+
+### The total number of steps across all days
+```{r}
+sum(data$steps, na.rm=TRUE)
+```
+
+## Calculate the total number of steps taken each day, removing NA values
+```{r}
+DSum <- tapply(data$steps ,data$date , sum, na.rm=TRUE)
+```
+
+## Create a histogram of the number of steps taken each day
+```{r}
+hist(DSum)
+```
+
+## Calculate the mean of total steps taken each day
+```{r}
+mean(DSum)
+```
+
+## Calculate the median of total steps taken each day
+```{r}
+median(DSum)
+```
+
+# What is the average daily activity pattern?
+
+## Create a dataframe consisting of the mean values for each interval over all days
+```{r}
+S5Sum <- tapply(data$steps ,data$interval , mean, na.rm=TRUE)
+S5Sum.T <- t(S5Sum)
+stepsMean <- cbind(as.data.frame(S5Sum), colnames(S5Sum.T))
+colnames(stepsMean) <- c("steps", "interval")
+```
+
+## Plot the Average steps taken across all days over each of the  intervals
+```{r}
+plot(stepsMean$steps,  ylab="Mean Steps", xlab="5 Min Interval",  type="l", main="Average steps taken across all days over each 5 min interval")
+```
+
+### Find the interval with the maximum number of average steps
+```{r}
+stepsMean[stepsMean[,1] == max(stepsMean$steps),]
+```
+
+# Imputing missing values
+
+### Calculate the total number of missing values in the dataset
+```{r}
+nrow(data[is.na(data[,1]),])
+```
+
+### create a dataset of only missing values
+```{r}
+naData <-data[is.na(data[,1]),]
+```
+
+### create a merged data from the na-data and the mean data table using the mean values to impute the missing values
+```{r}
+mergedData = merge(naData,stepsMean, by.x="interval",by.y="interval",all=TRUE)
+```
+
+### create a cutdown version to match the original dataset
+```{r}
+newCreatedData <- data.frame(mergedData$steps.y,mergedData$date,mergedData$interval)
+```
+
+### set the column names of the new imputed values
+```{r}
+colnames(newCreatedData) <- c("steps", "date","interval")
+```
+
+### create a dataset that has no missing values from the original
+```{r}
+naData2 <-data[is.na(data[,1]) == FALSE,]
+#head(naData2, 35)
+```
+
+### put the two datasets together
+```{r}
+newCreatedData2 <- rbind(newCreatedData, naData2)
+```
+
+## Summary of original dataset
+```{r}
+summary(data)
+```
+
+## Summary of imputed dataset
+```{r}
+summary(newCreatedData2)
+```
+
+## Calculate the total number of steps taken each day with imputed values  
+```{r}
+DSum2 <- tapply(newCreatedData2$steps ,newCreatedData2$date , sum, na.rm=TRUE)
+```
+
+## Histogram of the original dataset  
+```{r}
+hist(DSum)
+```
+
+## Histogram of the new dataset
+```{r}
+hist(DSum2)
+```
+
+## Mean of total steps each day - NEW dataset
+```{r}
+mean(DSum2)
+```
+
+## Median of total steps each day - NEW dataset
+```{r}
+median(DSum2)
+```
+
+## What is the impact of imupting vlaues RAW
+```{r}
+mean(DSum2)   # the avarage value in the new dataset
+mean(DSum)    # the avarage value in the original dataset
+median(DSum2) # the median value in the new dataset
+median(DSum)  # the median value in the original dataset
+```
+
+### The mean increased by
+```{r}
+mean(DSum2) - mean(DSum)    
+
+```
+
+### The median increased by
+```{r}
+median(DSum2) - median(DSum)  
+```
+
+
+# Are there differences in activity patterns between weekdays and weekends?
+
+### Use weekdays to add a new column to new dataset
+```{r}
+newCreatedData2 <- cbind(newCreatedData2, weekdays(as.Date(newCreatedData2$date)))
+colnames(newCreatedData2) <- c("steps", "date","interval", "day")
+```
+
+### Create a new factor variable in the dataset with two levels - "weekday" and "weekend"
+```{r}
+newCreatedData2$weekend = chron::is.weekend(newCreatedData2$date)
+```
+
+# Weekend Plot
+### create a plot of all average steps for the weekend
+```{r}
+plotdf <- newCreatedData2[newCreatedData2$weekend == TRUE, ]
+```
+
+### calculate the mean number of steps for each 5 min period - WEEKEND
+```{r}
+S5Sum <- tapply(plotdf$steps ,plotdf$interval , mean, na.rm=TRUE)
+```
+
+### time series plot, Average steps taken across all weekends over 288, 5 min interval periods
+```{r}
+plot(S5Sum,   ylab="Mean Steps", xlab="5 Min Interval Period",  type="l", main="Average steps taken across all weekends over 288, 5 min interval periods")
+```
+
+# Weekday Plot
+### create a plot of all average steps for the weekdays
+```{r}
+plotdf <- newCreatedData2[newCreatedData2$weekend == FALSE, ] 
+```
+
+### calculate the mean number of steps for each 5 min period - WEEKDAY
+```{r}
+S5Sum <- tapply(plotdf$steps ,plotdf$interval , mean, na.rm=TRUE)
+```
+
+### time series plot, Average steps taken across all weekdays over 288, 5 min interval periods
+```{r}
+plot(S5Sum,  ylab="Mean Steps", xlab="5 Min Interval period",  type="l", main="Average steps taken across all weekdays over 288, 5 min interval periods")
+```
+
